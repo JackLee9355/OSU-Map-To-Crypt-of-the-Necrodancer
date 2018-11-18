@@ -4,23 +4,93 @@ import javazoom.jl.decoder.Header;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Main {
 
     public final String customMusicPath = "D:\\SteamLibrary\\steamapps\\common\\Crypt of the NecroDancer\\data\\custom_music\\";
     public final String OSUSongsPath = "C:\\Users\\welsa\\AppData\\Local\\osu!\\Songs\\";
+    public final String saveFilePath = "D:\\SteamLibrary\\steamapps\\common\\Crypt of the NecroDancer\\data\\save_data76561198090580924.xml";
 
     public static void main(String[] args) throws IOException{
-        Scanner scanner = new Scanner(System.in);
+        Main main = new Main();
+        /*Scanner scanner = new Scanner(System.in);
         System.out.println("Drag and drop .osu file here");
         String inputString = scanner.nextLine();
-        Main main = new Main();
-        File dotOSU = new File(inputString);
-        main.convertOSU(dotOSU, main.getMapSongTitle(dotOSU) + ".mp3");
+        File dotOSU = new File(inputString);*/
+        main.randomizeMusic();
+    }
+
+    public void randomizeMusic() throws IOException {
+        for(int i=0;i<=20;i++){
+            File dotOSU = null;
+            while(dotOSU == null){
+                dotOSU = randomDotOSU();
+            }
+            convertOSU(dotOSU, getMapSongTitle(dotOSU));
+            setCustomSongAs(i, getMapSongTitle(dotOSU)+".mp3");
+        }
+    }
+
+    public void setCustomSongAs(int customSongCount, String MP3Name) throws IOException{
+        BufferedReader XMLReader = new BufferedReader(new FileReader(new File(saveFilePath)));
+        String line = null;
+        String XML = null;
+        while ((line = XMLReader.readLine()) != null) {
+            if(XML == null){
+                XML = line;
+            }
+            else{
+                XML = XML + "\n " + line;
+            }
+        }
+        XMLReader.close();
+        StringBuilder toWrite;
+        if(XML.indexOf("customSong" + customSongCount + "=\"") != -1) {
+            toWrite = new StringBuilder(XML.replaceAll("(?<=customSong" + customSongCount + "=\")(.*?)(?=\")", (customMusicPath + MP3Name).replaceAll("\\\\", "\\\\\\\\")));
+        }else{
+            toWrite = new StringBuilder(XML);
+            toWrite.insert(toWrite.indexOf("<game ") + "<game ".length(), "customSong"+customSongCount+"=\""+customMusicPath+MP3Name+"\" ");
+        }
+        BufferedWriter XMLWriter = new BufferedWriter(new FileWriter(new File(saveFilePath)));
+        XMLWriter.write(toWrite.toString());
+        XMLWriter.close();
+    }
+
+    public File randomDotOSU(){
+        File songsDirectory = new File(OSUSongsPath);
+        ArrayList<File> potentialFolders = new ArrayList<>();
+        for(File songFolders : songsDirectory.listFiles()){
+            if (songFolders.isDirectory()){
+                potentialFolders.add(songFolders);
+            }
+        }
+        File songFolder = potentialFolders.get(new Random().nextInt(potentialFolders.size()));
+        for(File songFiles : songFolder.listFiles()){
+            if(songFiles.getName().endsWith(".osu")){
+                return songFiles;
+            }
+        }
+        return null;
+    }
+
+    //Currently results in a memory leak or something. OutOfMemoryError
+    public void convertEntireOSULibrary() throws IOException {
+        File songsDirectory = new File(OSUSongsPath);
+        for(File songFolders : songsDirectory.listFiles()){
+            if (songFolders.isDirectory()){
+                for(File songFiles : songFolders.listFiles()){
+                    if(songFiles.getName().endsWith(".osu")){
+                        try {
+                            convertOSU(songFiles, getMapSongTitle(songFiles));
+                        }catch (Exception e){
+                            System.out.println("Failure to convert a song: " + getMapSongTitle(songFiles) + " Reason: " + e.getMessage());
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     public void convertOSU(File dotOSU, String outputName) throws IOException {
@@ -40,8 +110,8 @@ public class Main {
             }
             iterationCount++;
         }
-        FileUtils.copyFile(getMapMP3(dotOSU), new File(customMusicPath + outputName));
-        writeOneBeatPerLineInSeconds(customMusicPath + outputName + ".txt", beats);
+        FileUtils.copyFile(getMapMP3(dotOSU), new File(customMusicPath + outputName + ".mp3"));
+        writeOneBeatPerLineInSeconds(customMusicPath + outputName + ".mp3.txt", beats);
     }
 
     public ArrayList<Double> getBeatsBetween(double start, double end, double MBB) {
