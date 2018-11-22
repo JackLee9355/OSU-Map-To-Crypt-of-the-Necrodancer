@@ -1,6 +1,7 @@
-
 OSUPath:C:\Users\welsa\AppData\Local\osu!\Songs\
-
 MusicPath:D:\SteamLibrary\steamapps\common\Crypt of the NecroDancer\data\custom_music\
-
 SavePath:D:\SteamLibrary\steamapps\common\Crypt of the NecroDancer\data\save_data76561198090580924.xml
+MaximumAmountOfTimingPoints:50
+MinimumAmountOfTimingPoints:1
+MaximumBPM:360
+MinimumBPM:1
