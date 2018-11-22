@@ -1,3 +1,5 @@
+package com.gmail.welsar55;
+
 import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.BitstreamException;
 import javazoom.jl.decoder.Header;
@@ -8,28 +10,63 @@ import java.util.*;
 
 public class Main {
 
-    public final String customMusicPath = "D:\\SteamLibrary\\steamapps\\common\\Crypt of the NecroDancer\\data\\custom_music\\";
-    public final String OSUSongsPath = "C:\\Users\\welsa\\AppData\\Local\\osu!\\Songs\\";
-    public final String saveFilePath = "D:\\SteamLibrary\\steamapps\\common\\Crypt of the NecroDancer\\data\\save_data76561198090580924.xml";
+    public String customMusicPath = null;
+    public String OSUSongsPath = null;
+    public String saveFilePath = null;
 
-    public static void main(String[] args) throws IOException{
+    public static void main(String[] args) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Commands: \nrandomize\nconvertall (Might run out of memory atm.)\nconvert [path to .osu file]");
         Main main = new Main();
-        /*Scanner scanner = new Scanner(System.in);
-        System.out.println("Drag and drop .osu file here");
-        String inputString = scanner.nextLine();
-        File dotOSU = new File(inputString);*/
-        main.randomizeMusic();
+        main.loadConfig();
+        String command = scanner.nextLine();
+        if(command.trim().equalsIgnoreCase("randomize")){
+            main.randomizeMusic();
+        }else if(command.trim().equalsIgnoreCase("convertall")){
+            main.convertEntireOSULibrary();
+        }else if(command.startsWith("convert ")){
+            String filePath = command.substring("convert ".length());
+            File osu = new File(filePath);
+            main.convertOSU(osu, main.getMapSongTitle(osu));
+        }
     }
 
-    public void randomizeMusic() throws IOException {
+    public void randomizeMusic() {
         for(int i=0;i<=20;i++){
-            File dotOSU = null;
-            while(dotOSU == null){
-                dotOSU = randomDotOSU();
+            boolean exception = true;
+            while(exception) {
+                try {
+                    File dotOSU = null;
+                    while (dotOSU == null) {
+                        dotOSU = randomDotOSU();
+                    }
+                    convertOSU(dotOSU, getMapSongTitle(dotOSU));
+                    setCustomSongAs(i, getMapSongTitle(dotOSU) + ".mp3");
+                    exception = false;
+                }
+                catch (Exception e){
+                    System.out.println("Error occured while trying to randomize music. Trying another song. Error: " + e.getMessage());
+                }
             }
-            convertOSU(dotOSU, getMapSongTitle(dotOSU));
-            setCustomSongAs(i, getMapSongTitle(dotOSU)+".mp3");
         }
+    }
+
+    public void loadConfig() throws IOException{
+        BufferedReader configReader = new BufferedReader(new FileReader(new File("config.txt")));
+        String line = null;
+        while ((line = configReader.readLine()) != null) {
+            if (line.startsWith("OSUPath:")){
+                OSUSongsPath = line.substring("osupath:".length());
+            }else if(line.startsWith("MusicPath:")){
+                customMusicPath = line.substring("musicpath:".length());
+            }else if(line.startsWith("SavePath:")){
+                saveFilePath = line.substring("savepath:".length());
+            }
+        }
+        if(OSUSongsPath == null || customMusicPath == null || saveFilePath == null){
+            System.out.println("Error reading config");
+        }
+        configReader.close();
     }
 
     public void setCustomSongAs(int customSongCount, String MP3Name) throws IOException{
